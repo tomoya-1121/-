@@ -1,473 +1,182 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🐾 わたげ成長日記 🐾</title>
-  <style>
-    /* --------------------
-       Cute & clean styles
-       -------------------- */
-    :root{
-      --bg: #fffaf6;
-      --card: #fff;
-      --muted:#8b8b8b;
-      --accent:#ff8fab;
-      --accent-2:#ffd88f;
-      --shadow: 0 6px 18px rgba(16,16,16,0.08);
-      --round:18px;
-      font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>わたげ成長記録</title>
+<style>
+body {
+    font-family: sans-serif;
+}
+
+/* モーダル全体 */
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* モーダルカード */
+.modal-card {
+    background: #fff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    overflow: hidden;
+}
+
+/* 写真カラム */
+.modal-left {
+    flex: 1;
+    background: #f8f8f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 300px;
+}
+.modal-left.hidden {
+    display: none;
+}
+.modal-photo-placeholder {
+    color: #aaa;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* 右カラム */
+.modal-right {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+/* サムネイル */
+.modal-thumbnails {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    margin-top: 8px;
+}
+.modal-thumbnails img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+/* スマホ用 */
+@media (max-width: 600px) {
+    .modal-card {
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        border-radius: 0;
+        overflow-y: auto;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; padding:28px; background:linear-gradient(180deg,var(--bg),#fff);
-      color:#222; -webkit-font-smoothing:antialiased;
+    .modal-left, .modal-right {
+        min-width: 100%;
+        max-width: 100%;
     }
-
-    header{display:flex; gap:16px; align-items:center; margin-bottom:18px}
-    header h1{margin:0; font-size:22px}
-    .card{background:var(--card); border-radius:20px; padding:14px; box-shadow:var(--shadow)}
-
-    .layout{display:grid; grid-template-columns:320px 1fr; gap:18px}
-
-    /* left column */
-    #profile.card{padding:16px}
-    #profile p{margin:6px 0; color:var(--muted)}
-    #profile strong{color:#333}
-
-    /* gallery small */
-    #photoGallery{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-    #photoGallery img{width:72px; height:72px; object-fit:cover; border-radius:12px; box-shadow:0 6px 12px rgba(0,0,0,0.06)}
-
-    /* right column - main */
-    main{display:flex; flex-direction:column; gap:12px}
-
-    /* calendar styles */
-    .calendar-wrap{display:flex; gap:12px; align-items:flex-start}
-    .calendar{width:100%; padding:12px}
-    .cal-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
-    .cal-header button{background:transparent; border:0; font-size:18px; cursor:pointer}
-
-    .month{font-weight:700}
-    .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
-    .dayname{font-size:12px; text-align:center; color:var(--muted)}
-    .day{background:#fff; border-radius:12px; min-height:78px; padding:8px; position:relative; cursor:pointer; transition:transform .12s}
-    .day:hover{transform:translateY(-4px)}
-    .day .num{font-weight:700}
-    .day .badge{position:absolute; right:8px; top:8px; font-size:12px}
-    .dot{width:8px; height:8px; border-radius:50%; display:inline-block}
-    .dot.photo{background:#ffb3c0}
-    .dot.diary{background:#ffd08a}
-    .dot.weight{background:#9ad3ff}
-    .dot.event{background:#c5b3ff}
-
-    /* forms inside modal */
-    .modal{position:fixed; inset:0; background:rgba(0,0,0,0.32); display:flex; align-items:center; justify-content:center; padding:16px}
-    .modal-card{width:min(900px,100%); background:var(--card); border-radius:18px; padding:18px; box-shadow:var(--shadow); max-height:90vh; overflow:auto}
-    .modal-grid{display:grid; grid-template-columns:1fr 380px; gap:12px}
-    .close-btn{float:right; background:transparent; border:0; font-size:20px; cursor:pointer}
-
-    .entry-list{margin-top:8px}
-    .entry{background:#f9f7ff; padding:8px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center}
-    .entry p{margin:0; font-size:14px}
-    .small{font-size:12px; color:var(--muted)}
-
-    input,textarea,select,button{font-family:inherit}
-    input[type='date'],input[type='number'],input[type='text'],textarea{width:100%; padding:8px; border-radius:10px; border:1px solid #eee; background:#fff}
-    button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; padding:8px 12px; border-radius:10px; border:0; cursor:pointer}
-    button.ghost{background:transparent; border:1px dashed #eee; padding:6px 10px; border-radius:10px}
-
-    /* compact weight history (collapsible) */
-    .collapsible{background:#fff; border-radius:12px; overflow:hidden}
-    .collapsible .head{display:flex; justify-content:space-between; align-items:center; padding:8px}
-    .collapsible .body{padding:8px; max-height:0; overflow:hidden; transition:max-height .28s}
-    .collapsible.open .body{max-height:320px}
-
-    /* responsive */
-    @media (max-width:860px){.layout{grid-template-columns:1fr}}   
-    @media (max-width:480px){
-        body{padding: 12px;}
-        header h1{font-size: 18px;}
-        .calendar .day{
-            min-height: 60px;
-            padding: 6px;
-        }
-        .calendar .num{font-size: 14px;}
-        input, textarea, button{font-size: 14px;}
-        .model-card{
-            width: 95vw !important;
-            padding: 12px;
-        }
-    } 
-  </style>
+    .modal-thumbnails {
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    .model-thumbnalis img{
+        flex:  0 0 auto;
+    }
+}
+</style>
 </head>
 <body>
-  <header>
-    <h1>🐾 わたげ成長日記</h1>
-    <div class="small">かわいい成長をカレンダーで記録しよう！</div>
-  </header>
 
-  <div class="layout">
-    <!-- left column: profile & gallery & quick forms -->
-    <aside>
-      <section id="profile" class="card">
-        <h2>プロフィール</h2>
-        <p>名前: <strong id="dogName">わたげ</strong></p>
-        <p>犬種: <strong id="dogBreed">チワマル</strong></p>
-        <p>誕生日: <strong id="dogBirth">2024-10-08</strong></p>
-        <hr />
-        <div>
-          <label class="small">写真アップロード（カレンダー日に紐づけ）</label>
-          <input type="file" id="photoInputLeft" accept="image/*">
-          <input type="text" id="modalEventText" placeholder="イベント名">
-          <button id="modalAddEvent" class="primary">イベント追加</button>
-        </div>
-      </section>
-
-      <section id="weight" class="card" style="margin-top:12px;">
-        <h3>体重（最近の記録）</h3>
-        <div class="collapsible" id="weightCollapsible">
-          <div class="head">
-            <div class="small">最新の5件を表示</div>
-            <button id="toggleWeight" class="ghost">履歴を表示</button>
-          </div>
-          <div class="body" id="weightBody"></div>
-        </div>
-        <div style="margin-top:8px;" class="small">※ カレンダーから日付を選んで記録すると見やすいです</div>
-      </section>
-
-      <section id="quickControls" class="card" style="margin-top:12px;">
-        <h3>クイック操作</h3>
-        <button id="todayOpen" class="primary">今日の記録を開く</button>
-      </section>
-    </aside>
-
-    <!-- main: calendar -->
-    <main>
-      <section class="card calendar">
-        <div class="cal-header">
-          <div>
-            <button id="prevMonth">◀</button>
-            <span class="month" id="monthLabel"></span>
-            <button id="nextMonth">▶</button>
-          </div>
-          <div class="small">クリックでその日の記録を開く</div>
-        </div>
-
-        <div class="grid" id="dayNames"></div>
-        <div class="grid" id="calendarGrid" style="margin-top:8px"></div>
-      </section>
-
-      <section class="card">
-        <h3>使い方メモ</h3>
-        <ul class="small">
-          <li>カレンダーの日付をクリック → モーダルが開き、その日専用に写真 / 日記 / 体重 / イベント を追加できます。</li>
-          <li>各エントリには削除ボタン付き。写真はギャラリーからも削除可能。</li>
-          <li>体重は各日付へ保存されるため、表示が長くなりにくい仕様です。</li>
-        </ul>
-      </section>
-    </main>
-  </div>
-
-  <!-- modal (hidden until needed) -->
-  <div id="modal" class="modal" style="display:none">
+<!-- モーダル -->
+<div id="dayModal" class="modal">
     <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center">
-        <h3 id="modalTitle">日付</h3>
-        <div>
-          <button id="deleteAllForDay" class="ghost" title="この日の全データを削除">この日の削除</button>
-          <button id="closeModal" class="close-btn">✕</button>
-        </div>
-      </div>
-
-      <div class="modal-grid">
-        <div>
-          <!-- main column: add entries -->
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <input type="file" id="modalPhotoInput">
-            <input type="text" id="modalEventText" placeholder="イベント名">
-            <button id="modalAddEvent" class="primary">イベント追加</button>
-          </div>
-
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <textarea id="modalDiaryText" rows="3" placeholder="日記を書く..."></textarea>
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <button id="modalSaveDiary" class="primary">日記保存</button>
-              <button id="modalAddWeight" class="primary">体重追加</button>
+        <div id="modalLeft" class="modal-left">
+            <div id="modalMainPhotoWrapper">
+                <span class="modal-photo-placeholder">📷 写真はまだありません</span>
             </div>
-          </div>
-
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px">
-            <input type="number" step="0.1" id="modalWeightValue" placeholder="体重(kg)">
-          </div>
-
-          <hr />
-
-          <div>
-            <h4>この日のエントリ</h4>
-            <div id="modalEntries" class="entry-list"></div>
-          </div>
-
+            <div id="modalThumbnails" class="modal-thumbnails"></div>
         </div>
-
-        <aside>
-          <div>
-            <h4>プレビュー</h4>
-            <div id="modalPhotoPreview" style="display:flex; gap:8px; flex-wrap:wrap"></div>
-          </div>
-          <div style="margin-top:12px">
-            <h4>今日の情報</h4>
-            <div class="small">日付: <span id="modalDateLabel"></span></div>
-            <div class="small">写真/日記/体重/イベントをここで管理できます</div>
-          </div>
-        </aside>
-      </div>
+        <div class="modal-right">
+            <h2 id="modalDate"></h2>
+            <input type="file" id="modalPhotoInput"><br>
+            <input type="text" id="modalEventInput" placeholder="イベント名">
+            <button id="modalAddEventBtn">イベント追加</button>
+            <textarea id="modalDiary" placeholder="日記を書く…"></textarea><br>
+            <input type="number" id="modalWeight" placeholder="体重(kg)">
+            <div id="modalEntries"></div>
+            <button id="modalCloseBtn">閉じる</button>
+        </div>
     </div>
-  </div>
+</div>
 
-  <script>
-  // ---------- データモデル（localStorageキー） ----------
-  const KEY_PHOTOS = 'dogPhotosByDate';   // { 'YYYY-MM-DD': [dataUrl,...] }
-  const KEY_DIARY = 'dogDiaryByDate';      // { 'YYYY-MM-DD': [ {text, time, id} ] }
-  const KEY_WEIGHT = 'dogWeightByDate';    // { 'YYYY-MM-DD': [ {value, time, id} ] }
-  const KEY_EVENTS = 'dogEventsByDate';    // { 'YYYY-MM-DD': [ {text, time, id} ] }
+<script>
+const modal = document.getElementById('dayModal');
+const modalLeft = document.getElementById('modalLeft');
+const modalMainPhotoWrapper = document.getElementById('modalMainPhotoWrapper');
+const modalThumbnails = document.getElementById('modalThumbnails');
+const modalDate = document.getElementById('modalDate');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-  // ---------- ヘルパー ----------
-  function load(key){ return JSON.parse(localStorage.getItem(key) || '{}'); }
-  function save(key,obj){ localStorage.setItem(key, JSON.stringify(obj)); }
-  function uid(){ return Math.random().toString(36).slice(2,9); }
-  function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+let currentDayData = {
+    photos: []
+};
 
-  // ---------- calendar logic ----------
-  let viewYear, viewMonth; // 0-indexed month
-  const monthLabel = document.getElementById('monthLabel');
-  const calendarGrid = document.getElementById('calendarGrid');
-  const dayNames = ['日','月','火','水','木','金','土'];
-
-  function initCalendar(){
-    const now = new Date(); viewYear = now.getFullYear(); viewMonth = now.getMonth();
-    document.getElementById('dayNames').innerHTML = dayNames.map(d=>`<div class='dayname'>${d}</div>`).join('');
-    renderCalendar();
-  }
-
-  document.getElementById('prevMonth').addEventListener('click', ()=>{ if(viewMonth===0){viewMonth=11; viewYear--;} else viewMonth--; renderCalendar(); });
-  document.getElementById('nextMonth').addEventListener('click', ()=>{ if(viewMonth===11){viewMonth=0; viewYear++;} else viewMonth++; renderCalendar(); });
-
-  function renderCalendar(){
-    monthLabel.textContent = `${viewYear}年 ${viewMonth+1}月`;
-    calendarGrid.innerHTML = '';
-
-    // 1st day of month
-    const first = new Date(viewYear, viewMonth, 1);
-    const startDay = first.getDay();
-    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
-
-    // fill blanks
-    for(let i=0;i<startDay;i++){
-      const blank = document.createElement('div'); blank.className='day'; blank.style.opacity=.0; calendarGrid.appendChild(blank);
+// モーダルを開く（テスト用）
+function openModal(date, data) {
+    currentDayData = data || { photos: [] };
+    modalDate.textContent = date;
+    
+    // 写真がない場合 → 左カラム非表示
+    if (!currentDayData.photos || currentDayData.photos.length === 0) {
+        modalLeft.classList.add('hidden');
+    } else {
+        modalLeft.classList.remove('hidden');
+        renderPhotos();
     }
-
-    const photos = load(KEY_PHOTOS);
-    const diary = load(KEY_DIARY);
-    const weight = load(KEY_WEIGHT);
-    const events = load(KEY_EVENTS);
-
-    for(let d=1; d<=daysInMonth; d++){
-      const cell = document.createElement('div'); cell.className='day card';
-      const y = viewYear; const m = String(viewMonth+1).padStart(2,'0'); const day = String(d).padStart(2,'0');
-      const iso = `${y}-${m}-${day}`;
-      cell.innerHTML = `<div class='num'>${d}</div><div class='badge'></div>`;
-
-      // add dots if data exist
-      const badge = cell.querySelector('.badge');
-      if(photos[iso] && photos[iso].length) badge.innerHTML += `<span title='写真あり' class='dot photo' style='margin-left:6px'></span>`;
-      if(diary[iso] && diary[iso].length) badge.innerHTML += `<span title='日記あり' class='dot diary' style='margin-left:6px'></span>`;
-      if(weight[iso] && weight[iso].length) badge.innerHTML += `<span title='体重あり' class='dot weight' style='margin-left:6px'></span>`;
-      if(events[iso] && events[iso].length) badge.innerHTML += `<span title='イベントあり' class='dot event' style='margin-left:6px'></span>`;
-
-      cell.addEventListener('click', ()=> openModalForDate(iso));
-      calendarGrid.appendChild(cell);
-    }
-  }
-
-  // ---------- modal + per-day CRUD ----------
-  const modal = document.getElementById('modal');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalDateLabel = document.getElementById('modalDateLabel');
-  const modalPhotoInput = document.getElementById('modalPhotoInput');
-  const modalPhotoPreview = document.getElementById('modalPhotoPreview');
-  const modalDiaryText = document.getElementById('modalDiaryText');
-  const modalEntries = document.getElementById('modalEntries');
-  const modalWeightValue = document.getElementById('modalWeightValue');
-  const modalEventText = document.getElementById('modalEventText');
-
-  let activeDate = null;
-
-  function openModalForDate(iso){
-    activeDate = iso;
-    modalDateLabel.textContent = iso;
-    modalTitle.textContent = `${iso} の記録`;
+    
     modal.style.display = 'flex';
-    refreshModalEntries();
-  }
+}
 
-  document.getElementById('closeModal').addEventListener('click', ()=>{ modal.style.display='none'; activeDate=null; });
-  document.getElementById('todayOpen').addEventListener('click', ()=>{ openModalForDate(todayISO()); });
-
-  // delete all for day
-  document.getElementById('deleteAllForDay').addEventListener('click', ()=>{
-    if(!activeDate) return; if(!confirm(activeDate + ' の全データを削除しますか？')) return;
-    const k1 = load(KEY_PHOTOS); delete k1[activeDate]; save(KEY_PHOTOS,k1);
-    const k2 = load(KEY_DIARY); delete k2[activeDate]; save(KEY_DIARY,k2);
-    const k3 = load(KEY_WEIGHT); delete k3[activeDate]; save(KEY_WEIGHT,k3);
-    const k4 = load(KEY_EVENTS); delete k4[activeDate]; save(KEY_EVENTS,k4);
-    refreshModalEntries(); renderCalendar(); refreshLeftGallery(); refreshWeightSummary();
-  });
-
-  // photo upload in modal
-  modalPhotoInput.addEventListener('change', function(){
-    const file = this.files[0]; if(!file || !activeDate) return;
-    const reader = new FileReader();
-    reader.onload = function(e){
-      const photos = load(KEY_PHOTOS);
-      photos[activeDate] = photos[activeDate] || [];
-      photos[activeDate].push({id:uid(), src:e.target.result, time: new Date().toISOString()});
-      save(KEY_PHOTOS, photos);
-      refreshModalEntries(); refreshLeftGallery(); renderCalendar();
-    };
-    reader.readAsDataURL(file);
-    this.value = null;
-  });
-
-  // add diary
-  document.getElementById('modalSaveDiary').addEventListener('click', ()=>{
-    if(!activeDate) return; const text = modalDiaryText.value.trim(); if(!text) return;
-    const diaries = load(KEY_DIARY);
-    diaries[activeDate] = diaries[activeDate] || [];
-    diaries[activeDate].unshift({id:uid(), text, time:new Date().toISOString()});
-    save(KEY_DIARY, diaries);
-    modalDiaryText.value=''; refreshModalEntries(); renderCalendar();
-  });
-
-  // add weight
-  document.getElementById('modalAddWeight').addEventListener('click', ()=>{
-    if(!activeDate) return; const v = modalWeightValue.value; if(!v) return;
-    const weights = load(KEY_WEIGHT);
-    weights[activeDate] = weights[activeDate] || [];
-    weights[activeDate].push({id:uid(), value: parseFloat(v), time:new Date().toISOString()});
-    save(KEY_WEIGHT, weights);
-    modalWeightValue.value=''; refreshModalEntries(); renderCalendar(); refreshWeightSummary();
-  });
-
-  // add event
-  document.getElementById('modalAddEvent').addEventListener('click', ()=>{
-    if(!activeDate) return; const t = modalEventText.value.trim(); if(!t) return;
-    const ev = load(KEY_EVENTS);
-    ev[activeDate] = ev[activeDate] || [];
-    ev[activeDate].push({id:uid(), text:t, time:new Date().toISOString()});
-    save(KEY_EVENTS, ev);
-    modalEventText.value=''; refreshModalEntries(); renderCalendar();
-  });
-
-  // render modal entries
-  function refreshModalEntries(){
-    modalPhotoPreview.innerHTML=''; modalEntries.innerHTML='';
-    if(!activeDate) return;
-    const photos = load(KEY_PHOTOS)[activeDate] || [];
-    const diaries = load(KEY_DIARY)[activeDate] || [];
-    const weights = load(KEY_WEIGHT)[activeDate] || [];
-    const events = load(KEY_EVENTS)[activeDate] || [];
-
-    // photos preview
-    photos.forEach(p=>{
-      const img = document.createElement('img'); img.src = p.src; img.style.width='84px'; img.style.height='84px'; img.style.objectFit='cover'; img.style.borderRadius='10px'; img.style.boxShadow='0 6px 12px rgba(0,0,0,0.06)';
-      const wrapper = document.createElement('div'); wrapper.style.position='relative'; wrapper.appendChild(img);
-      const del = document.createElement('button'); del.textContent='削除'; del.className='ghost'; del.style.position='absolute'; del.style.right='4px'; del.style.bottom='4px';
-      del.onclick = ()=>{ if(!confirm('写真を削除しますか？')) return; const all = load(KEY_PHOTOS); all[activeDate] = all[activeDate].filter(x=>x.id!==p.id); save(KEY_PHOTOS, all); refreshModalEntries(); refreshLeftGallery(); renderCalendar(); };
-      wrapper.appendChild(del); modalPhotoPreview.appendChild(wrapper);
-      const div = document.createElement('div'); div.className='entry'; div.innerHTML = `<p class='small'>写真</p>`; div.appendChild(del.cloneNode(true)); modalEntries.appendChild(div);
-    });
-
-    // diaries
-    diaries.forEach(d=>{
-      const div = document.createElement('div'); div.className='entry';
-      const left = document.createElement('div'); left.innerHTML = `<p>${d.text}</p><div class='small'>${new Date(d.time).toLocaleTimeString()}</div>`;
-      const del = document.createElement('button'); del.className='ghost'; del.textContent='削除';
-      del.onclick = ()=>{ if(!confirm('日記を削除しますか？')) return; const all = load(KEY_DIARY); all[activeDate] = all[activeDate].filter(x=>x.id!==d.id); save(KEY_DIARY, all); refreshModalEntries(); renderCalendar(); };
-      div.appendChild(left); div.appendChild(del); modalEntries.appendChild(div);
-    });
-
-    // weights
-    weights.forEach(w=>{
-      const div = document.createElement('div'); div.className='entry';
-      const left = document.createElement('div'); left.innerHTML = `<p>体重: ${w.value} kg</p><div class='small'>${new Date(w.time).toLocaleTimeString()}</div>`;
-      const del = document.createElement('button'); del.className='ghost'; del.textContent='削除';
-      del.onclick = ()=>{ if(!confirm('体重を削除しますか？')) return; const all = load(KEY_WEIGHT); all[activeDate] = all[activeDate].filter(x=>x.id!==w.id); save(KEY_WEIGHT, all); refreshModalEntries(); renderCalendar(); refreshWeightSummary(); };
-      div.appendChild(left); div.appendChild(del); modalEntries.appendChild(div);
-    });
-
-    // events
-    events.forEach(ev=>{
-      const div = document.createElement('div'); div.className='entry';
-      const left = document.createElement('div'); left.innerHTML = `<p>${ev.text}</p><div class='small'>${new Date(ev.time).toLocaleTimeString()}</div>`;
-      const del = document.createElement('button'); del.className='ghost'; del.textContent='削除';
-      del.onclick = ()=>{ if(!confirm('イベントを削除しますか？')) return; const all = load(KEY_EVENTS); all[activeDate] = all[activeDate].filter(x=>x.id!==ev.id); save(KEY_EVENTS, all); refreshModalEntries(); renderCalendar(); };
-      div.appendChild(left); div.appendChild(del); modalEntries.appendChild(div);
-    });
-
-    // if no entries
-    if(!photos.length && !diaries.length && !weights.length && !events.length){
-      modalEntries.innerHTML = '<div class="small">この日はまだ記録がありません。フォームから追加できます。</div>';
+function renderPhotos() {
+    modalThumbnails.innerHTML = '';
+    if (currentDayData.photos.length > 0) {
+        const latest = currentDayData.photos[currentDayData.photos.length - 1];
+        const latestSrc = typeof latest === 'string' ? latest : latest.src;
+        modalMainPhotoWrapper.innerHTML = `<img src="${latestSrc}" style="max-width:100%;max-height:400px;">`;
+        currentDayData.photos.forEach(p => {
+            const src = typeof p === 'string' ? p : p.src;
+            const img = document.createElement('img');
+            img.src = src;
+            img.onclick = () => {
+                modalMainPhotoWrapper.innerHTML = `<img src="${src}" style="max-width:100%;max-height:400px;">`;
+            };
+            modalThumbnails.appendChild(img);
+        });
     }
-  }
+}
 
-  // ---------- left gallery refresh ----------
-  function refreshLeftGallery(){
-    const gallery = document.getElementById('photoGallery'); gallery.innerHTML='';
-    const all = load(KEY_PHOTOS);
-    // show most recent 8 photos (across dates)
-    const items = [];
-    Object.keys(all).forEach(date=>{ all[date].forEach(p=> items.push({date, ...p})); });
-    items.sort((a,b)=> new Date(b.time) - new Date(a.time));
-    items.slice(0,8).forEach(it=>{
-      const img = document.createElement('img'); img.src = it.src; img.title = it.date;
-      img.onclick = ()=> openModalForDate(it.date);
-      gallery.appendChild(img);
-    });
-  }
+// 閉じる
+modalCloseBtn.onclick = () => {
+    modal.style.display = 'none';
+};
 
-  // ---------- weight summary ----------
-  const weightBody = document.getElementById('weightBody');
-  const toggleWeight = document.getElementById('toggleWeight');
-  toggleWeight.addEventListener('click', ()=>{ document.getElementById('weightCollapsible').classList.toggle('open'); toggleWeight.textContent = document.getElementById('weightCollapsible').classList.contains('open') ? '閉じる' : '履歴を表示'; });
+// テスト起動
+document.addEventListener('DOMContentLoaded', () => {
+    openModal('2025-08-01', { photos: [] }); // 空で表示
+});
+</script>
 
-  function refreshWeightSummary(){
-    const all = load(KEY_WEIGHT);
-    const items = [];
-    Object.keys(all).forEach(d=>{ all[d].forEach(w=> items.push({date:d, ...w})); });
-    items.sort((a,b)=> new Date(b.time) - new Date(a.time));
-    weightBody.innerHTML = items.slice(0,20).map(it=>`<div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px dashed #eee"><div><strong>${it.value} kg</strong><div class='small'>${it.date} ${new Date(it.time).toLocaleTimeString()}</div></div><div><button class='ghost' data-id='${it.id}' data-date='${it.date}'>削除</button></div></div>`).join('') || '<div class="small">記録がありません</div>';
-
-    // wire up delete buttons in summary
-    Array.from(weightBody.querySelectorAll('button.ghost')).forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const id = btn.dataset.id; const date = btn.dataset.date; if(!confirm('この体重記録を削除しますか？')) return;
-        const allw = load(KEY_WEIGHT); allw[date]= allw[date].filter(x=>x.id!==id); save(KEY_WEIGHT, allw); refreshWeightSummary(); renderCalendar();
-      });
-    });
-  }
-
-  // ---------- initial photo input on left (quick upload to today) ----------
-  document.getElementById('photoInputLeft').addEventListener('change', function(){ const file=this.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=function(e){ const all=load(KEY_PHOTOS); const d = todayISO(); all[d]= all[d]||[]; all[d].push({id:uid(), src:e.target.result, time:new Date().toISOString()}); save(KEY_PHOTOS, all); refreshLeftGallery(); renderCalendar(); }; reader.readAsDataURL(file); this.value=null; });
-
-  // ---------- init ----------
-  initCalendar(); refreshLeftGallery(); refreshWeightSummary();
-
-  // close modal on background click
-  modal.addEventListener('click', (e)=>{ if(e.target===modal){ modal.style.display='none'; activeDate=null; } });
-
-  // ensure UI updates if storage manually changed elsewhere
-  window.addEventListener('storage', ()=>{ renderCalendar(); refreshLeftGallery(); refreshWeightSummary(); });
-  </script>
 </body>
 </html>
